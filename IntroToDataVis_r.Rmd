@@ -25,8 +25,15 @@ library(ggplot2)
 *I'm using `read.csv` to read in the data.*
 
 ```{r}
-url = 'https://raw.githubusercontent.com/ageller/IDEAS_FSS-Vis/master/matplotlib/bar/bar.csv'
-data = read.csv(url)
+url <- 'https://drive.google.com/file/d/1iWAtKk7aOinwb-pJ-Cy-hiB5xBv3Z-b5/view?usp=sharing'
+
+# Extract file ID from the URL
+file_id <- strsplit(url, "/")[[1]][6]
+
+# Construct the direct download link
+direct_url <- paste0('https://drive.google.com/uc?id=', file_id)
+
+data <- read.csv(direct_url)
 data
 ```
 
@@ -81,9 +88,13 @@ ggplot(data, aes(x = reorder(Label, Value), y = Value)) +
 # Make plot wider for display
 options(repr.plot.width = 15, repr.plot.height = 8)
 
-ggplot(data, aes(x = reorder(Label, Value),
-                  y = Value,
-                  fill = factor(ifelse(Label == "Color Choice", "Highlighted", "Normal")))) + # to highlight one bar
+ggplot(data, 
+        aes(
+            x = reorder(Label, Value),
+            y = Value,
+            fill = factor(ifelse(Label == "Color Choice", "Highlighted", "Normal")) # to highlight one bar
+        )
+    ) + 
     geom_bar(stat = "identity", show.legend = FALSE) + # use stat = "identity" because we are supplying the actual bar values
     labs(title = "Percentage of Poor Usage in Data Visualization", x = "", y = "") + 
     coord_flip() + # this flips the plot to horizontal
@@ -91,13 +102,14 @@ ggplot(data, aes(x = reorder(Label, Value),
     ylim(0,11) + # add some space for the text labels; since we flipped the plot we use "ylim" (instead of "xlim")
     scale_fill_manual(name = "", values = c("orange","grey50")) + # set the colors for highlighting
     theme_classic() + # there are many themes to choose from : https://ggplot2.tidyverse.org/reference/ggtheme.html
-    theme(axis.line = element_blank(), # remove the remaining axis lines
-          axis.text.x = element_blank(), # remove x axis labels
-          axis.ticks.x = element_blank(), # remove x axis ticks
-          axis.ticks.y = element_blank(),  # remove y axis ticks
-          axis.text = element_text(size = 20), # increase the font size of the labels
-          plot.title = element_text(size = 30) # increase the font size of the title
-          )
+    theme(
+        axis.line = element_blank(), # remove the remaining axis lines
+        axis.text.x = element_blank(), # remove x axis labels
+        axis.ticks.x = element_blank(), # remove x axis ticks
+        axis.ticks.y = element_blank(),  # remove y axis ticks
+        axis.text = element_text(size = 20), # increase the font size of the labels
+        plot.title = element_text(size = 30) # increase the font size of the title
+    )
 
 # save the figure (have to specify size here again)
 # ggsave("bar_r.pdf", device = "pdf", width = 15, height = 8)
@@ -108,143 +120,113 @@ ggplot(data, aes(x = reorder(Label, Value),
 ```{r}
 # import the necessary library
 library(ggplot2)
-library(ggforce) # only needed to draw the large annotation circles on the scatter plots
 ```
 
 ## 2.1. Read in the data
 
-*These two data sets are from <https://voteview.com/data> and use the using the [DW-NOMINATE method](https://en.wikipedia.org/wiki/NOMINATE_(scaling_method)) to evaluate the political characteristics of individuals on a scale from -1 to 1. Each row in the data is for a different congress person and contains the name, and "x" value and an "alt" value. The horizonal axis, "x", measures the level of liberal (low "x") or conservative (high "x") ideology and can also be interpreted as the position on government intervention in the economy. The vertical axis, "alt" can be interpreted as the position on cross-cutting, salient issues of the day. Most experts agree that the "x" dimension explains the vast majority of differences in voting behaviors.*
+*I downloaded [2024 Chicago taxi data](https://data.cityofchicago.org/Transportation/Taxi-Trips-2024-/ajtu-isnz/about_data) from the [Chicago data portal](https://data.cityofchicago.org/).  This dataset has millions rows and many columns (and is about 1.3G), and therefore may take some time to load and visualize.*
 
-*I'm using `read.csv` to read in the data.*
+*If you want to run this code locally, please either download the data from the Chicago Data Portal linked above, or the version that I have on Google Drive [here](https://drive.google.com/file/d/1QPS8DY2bDCbttMf4dEIIC3LOdYlph7sJ/view?usp=sharing).  (The dataset is too large to host on GitHub.)*  
 
-```{r}
-url90 = 'https://raw.githubusercontent.com/ageller/IDEAS_FSS-Vis/master/matplotlib/scatter/congress90.csv'
-c90 = read.csv(url90)
-head(c90)
-```
+*Here, we will look at columns for `Fare` and `Tips`.*
 
 ```{r}
-url116 = 'https://raw.githubusercontent.com/ageller/IDEAS_FSS-Vis/master/matplotlib/scatter/congress116.csv'
-c116 = read.csv(url116)
-head(c116)
+df <- read.csv('data/Taxi_Trips__2024-__20240731.csv')
+head(df)
 ```
 
-## 2.2 Let's plot these as two subplots
+## 2.2 Let's plot the `Fare` vs. `Tips` data as a scatter plot.
 
 *Is there anything that we should improve upon here?*
 
 ```{r}
-# There are a couple ways that you can do this.  
-# One would be to create two separate plots and use the gridExtra library to put them into one figure.
-# The other, which we will use here, is to use facets.
-
-# First, add a descriptive column to each dataframe and combine them
-c90$label <- "Congress 90"
-c116$label <- "Congress 116"
-
-data2 <- rbind(c90, c116)
-
-# create the scatter plot with facets
-ggplot(data = data2, aes(x = x, y = alt)) +
-    geom_point() + 
-    facet_wrap(~label)
+# create the scatter plot
+ggplot(data = df, aes(x = Fare, y = Tips)) +
+    geom_point() 
 ```
 
 ## 2.3 Let's improve this
-
--   *add some descriptive labels to the axes*
--   *improve the colors*
--   *increase the font sizes*
+- *Change the axis range.*
+- *Try open circles as symbols.*
+- *Add a title and some descriptive labels to the axes.*
+- *Increase the font sizes.*
 
 ```{r fig.height=8, fig.width=14, message=TRUE}
-# more descriptive labels for the facets
-c90$label <- "1967 - 1969"
-c116$label <- "2019 - 2021"
-
-data2 <- rbind(c90, c116)
-
-ggplot(data = data2, aes(x = x, y = alt)) +
-    geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = FALSE, fill = "white") + # draw a bounding circle
-    geom_point(aes(color = x), size = 4, show.legend = FALSE) + 
-    geom_point(shape = 1, size = 4, color = "black") +
-    facet_wrap(~label) + 
-    labs(title = "The US Congress Has Become More Politically Polarized", 
-         x = "Political ideology\n (In each panel liberal is to the left, conservative is to the right.)",
-         y = "Position on salient issues") +
-    scale_color_gradient2(midpoint = 0, limits = c(-1,1), low = "#0000FF", mid = "white", high = "#FF0000") +
-    xlim(-1,1) + ylim(-1,1) +
-    coord_fixed() +  # to ensure an equal aspect ratio
-    geom_vline(aes(xintercept = 0)) + # add a y-axis at 0
-    geom_hline(aes(yintercept = 0)) + # add a x-axis at 0
-    theme(panel.grid.major = element_blank(),  # remove the grid
-          panel.grid.minor = element_blank(), # remove the grid
-          axis.title = element_text(size = 26), # increase the font size of the axis titles
-          plot.title = element_text(size = 36), # increase the font size of the title
-          strip.text.x = element_text(size = 26), # increase size of the facet labels
-          axis.text.x = element_blank(), # remove x axis labels
-          axis.ticks.x = element_blank(), # remove x axis ticks
-          axis.text.y = element_blank(),  # remove y axis labels
-          axis.ticks.y = element_blank()  # remove y axis ticks
-          )
+ggplot(data = df, aes(x = Fare, y = Tips)) +
+    geom_point(shape = 1, size = 2) + 
+    labs(
+            title = "How Chicagoans Tipped their Cab Drivers in 2024", 
+            x = "Fare ($)",
+            y = "Tip ($)"
+    ) +
+    xlim(0,150) + ylim(0,150) +
+    theme(
+        panel.grid.major = element_blank(),  # remove the grid
+        panel.grid.minor = element_blank(), # remove the grid
+        axis.title = element_text(size = 20), # increase the font size of the axis titles
+        plot.title = element_text(size = 30), # increase the font size of the title
+        axis.text = element_text(size = 16), # increase the font size of the tick labels
+        aspect.ratio = 1, # so it's not as wide as the default
+    )
 
 # save the figure (have to specify size here)
-# ggsave("scatter_r.pdf", device = "pdf", width = 14, height = 8)
+# ggsave("scatter_r.pdf", device = "pdf", width = 8, height = 5)
 ```
 
-## 2.4 Would this be better as two overlapping histograms?
+## 2.4 Can we improve this more?
+- *Use a 2d histogram instead.  (Often when you have so much overlapping data, it is easier for the view to switch to a 2d histogram or contour plot, or similar).*
+- *Include a colorbar.*
+- *Add lines at typical tip rates and label them?*
 
-*If we don't really care about the y axis, we don't need to use it.*
+```{r}
+library(scales)  # mostly used for the colormap
+```
 
-```{r fig.height=8, fig.width=15, message=TRUE}
-# In order to get the look that I want, I will plot each of the groups twice
-#   once for the shaded interior of the histograms, using geom_histogram
-#   again for the outline, using stat_bin with geom = "step"
-# Each of these histograms will show the density of the respective data set
+```{r fig.height=8, fig.width=12, message=TRUE}
+# Create the plot
+p <- ggplot(df, aes(x = Fare, y = Tips)) +
+    geom_bin2d(bins = 60) +
+    scale_fill_continuous(
+        trans = 'log', 
+        low = "white", high = "darkblue",
+        limits = c(1, 1e4),# Set the minimum and maximum values for the colormap
+        oob = scales::squish, # Map out-of-bounds values to the maximum color
+        breaks = c(1, 10, 100, 1e3, 1e4),  # Define the legend values to show
+        guide = guide_colourbar(
+            title = "Number of Rides",
+            title.theme = element_text(size = 20),   # Title font size
+            label.theme = element_text(size = 16),    # Label font size
+        )
+    ) +
+    labs(
+        title = "How Chicagoans Tipped\ntheir Cab Drivers in 2024", 
+        x = "Fare ($)",
+        y = "Tip ($)"
+    ) +
+    scale_x_continuous(limits = c(0, 150), expand = c(0, 0)) +
+    scale_y_continuous(limits = c(0, 60), expand = c(0, 0)) +
+    theme_bw() + # remove the gray background
+    theme(
+        panel.grid.major = element_blank(),  # remove the grid
+        panel.grid.minor = element_blank(), # remove the grid
+        axis.title = element_text(size = 20), # increase the font size of the axis titles
+        plot.title = element_text(size = 30), # increase the font size of the title
+        axis.text = element_text(size = 16), # increase the font size of the tick labels
+        aspect.ratio = 1, # so it's not as wide as the default
+        legend.key.height = unit(3, "cm")
+    ) 
 
-# set the colors
-myColors <- c("1967 - 1969" = "#386B5D", "2019 - 2021" = "#3D007A")
 
-# define the binwidth
-binwidth <- 0.1
+# add lines at standard tip rates (uncomment below to include the lines in the plot)
+# tip_pcts <- c(0.2, 0.25, 0.30, 0.4)
+# p <- p + 
+#   geom_abline(data = data.frame(slope = tip_pcts), aes(intercept = 0, slope = slope), color = 'black', linetype = 'dashed', alpha = 0.7) +
+#   geom_text(data = data.frame(pct = tip_pcts), aes(x = 120, y = pct*130, label = paste0(pct*100, "%"), angle = 100*pct), color = 'black', hjust = 0, alpha = 0.7)
 
-ggplot(data = data2, aes(x = x, color = label, fill = label)) +
-    geom_histogram(data = subset(data2, label == "1967 - 1969"),
-        aes(fill = label, y = ..density..), 
-        binwidth = binwidth, center = 0, color = NA,
-        alpha = 0.5, size = 0, show.legend = FALSE) + 
-    geom_histogram(data = subset(data2, label == "2019 - 2021"),
-        aes(fill = label, y = ..density..), 
-        binwidth = binwidth, center = 0, color = NA,
-        alpha = 0.5, size = 0, show.legend = FALSE) +
-    stat_bin(data = subset(data2, label == "1967 - 1969"),
-        aes(y = ..density..), geom = "step",
-        binwidth = binwidth, center = 0,
-        size = 2, position = position_nudge(x = -binwidth/2.), show.legend = FALSE) + 
-    stat_bin(data = subset(data2, label == "2019 - 2021"),
-        aes(y = ..density..), geom = "step",
-        binwidth = binwidth, center = 0,
-        size = 2, position = position_nudge(x = -binwidth/2.), show.legend = FALSE) + 
-    scale_fill_manual(values = myColors) + # set the color for the filled histograms
-    scale_color_manual(values = myColors) + # set the color for the lines in stat_bin
-    labs(title = "The US Congress Has Become More Politically Polarized.", 
-         subtitle = "Conservatives have moved further to the right.",
-         x = "Liberal                 \u2192         Conservative",
-         y = "") + 
-    annotate("text", x = 0.1, y = 0.68, label = "1967 - 1969", color = myColors["1967 - 1969"], size = 7, hjust = 0) +
-    annotate("text", x = 0.4, y = 0.68, label = "2019 - 2021", color = myColors["2019 - 2021"], size = 7, hjust = 0) +
-    theme_classic() + 
-    geom_vline(aes(xintercept = 0)) + # add a y-axis at 0
-    geom_hline(aes(yintercept = 0)) + # add a x-axis at 0
-    theme(axis.line = element_blank(), # remove the remaining axis lines
-          axis.text.x = element_blank(), # remove x axis labels
-          axis.ticks.x = element_blank(), # remove x axis ticks
-          axis.text.y = element_blank(), # remove y axis labels
-          axis.ticks.y = element_blank(),  # remove y axis ticks
-          axis.title = element_text(size = 26), # increase the font size of the title
-          plot.title = element_text(size = 36, hjust = 0.5), # increase the font size of the title and center align
-          plot.subtitle = element_text(size = 26, hjust = 0.5) # increase the font size of the subtitle and center align
-          )
+
+# show the plot
+print(p)
 
 # save the figure (have to specify size here)
-# ggsave("hist_r.png", device = "png", width = 15, height = 8)
+# ggsave("hist_r.png", device = "png", width = 12, height = 8)
 ```
